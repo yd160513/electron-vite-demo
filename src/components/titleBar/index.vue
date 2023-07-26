@@ -54,24 +54,29 @@ outherUnmaximizeListener(() => {
   height: 38px;
   line-height: 38px;
   background-color: #fff1f0;
+
   .title {
     flex: 1;
     display: flex;
     -webkit-app-region: drag;
+
     .logo {
       padding-left: 8px;
       padding-right: 6px;
+
       img {
         width: 20px;
         height: 20px;
         margin-top: 7px;
       }
+
       .txt {
         text-align: left;
         flex: 1;
       }
     }
   }
+
   .window-tool {
     div {
       color: #888;
@@ -79,23 +84,25 @@ outherUnmaximizeListener(() => {
       width: 38px;
       display: inline-block;
       cursor: pointer;
+
       i {
         font-size: 12px;
+
         &:hover {
           background-color: #ffccc7;
         }
       }
     }
+
     .close:hover {
       color: #fff;
       background-color: #ff4d4f;
     }
   }
+
   .content {
     flex: 1;
     overflow-y: auto;
     overflow-x: auto;
   }
-}
-
-</style>
+}</style>

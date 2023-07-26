@@ -50,10 +50,18 @@ function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(process.env.DIST, 'index.html'))
   }
+
+  win.on('close', event => {
+    event.preventDefault()
+    win?.webContents.send('closeBefore')
+  })
+
 }
 
 app.on('window-all-closed', () => {
   win = null
+  irregularWindow = null
+  app.quit()
 })
 
 app.whenReady().then(() => {
@@ -103,4 +111,14 @@ function createIrregularWindow() {
 ipcMain.on('createIrregularWindow', () => {
   console.log('createIrregularWindow');
   createIrregularWindow()
+})
+
+
+
+ipcMain.on('destoryWin', () => {
+  console.log('退出 app');
+  win?.destroy()
+  const count = BrowserWindow.getAllWindows().length
+  console.log('count: ', count);
+  
 })

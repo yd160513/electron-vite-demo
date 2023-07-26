@@ -52,6 +52,7 @@ Windows: %LOCALAPPDATA%/electron/Cache or ~/AppData/Local/electron/Cache/ or C:/
      }
    })
    ```
+   
 2. 设置窗口默认鼠标事件穿透和转发
 
    > [官网对 setIgnoreMouseEvents 的定义.](https://www.electronjs.org/zh/docs/latest/tutorial/window-customization#%E5%88%9B%E5%BB%BA%E7%82%B9%E5%87%BB%E7%A9%BF%E9%80%8F%E7%AA%97%E5%8F%A3)。大体意思是传 true 时会穿透，反之则不会穿透。
@@ -127,5 +128,49 @@ Windows: %LOCALAPPDATA%/electron/Cache or ~/AppData/Local/electron/Cache/ or C:/
    }
    ```
 
+   ### 阻止窗口关闭
+   
+   1. 窗口监听 close 事件，并阻止默认事件，这个时候向渲染进程发通知
+   
+      ```js
+      win.on('close', event => {
+        event.preventDefault()
+        win?.webContents.send('closeBefore')
+      })
+      ```
+   
+   2. 渲染进程注册主进程发过来的通知监听，在监听中进程业务处理，处理完成后向主进程发送通知，通知主进程可以关闭窗口
+   
+      ```js
+      ipcRenderer.on('closeBefore', event => {
+        console.log('关闭窗口前的提示并通知主进程');
+        console.log('等待确认');
+        
+        
+        setTimeout(() => {
+          console.log('同意关闭');
+          
+          ipcRenderer.send('destoryWin')
+        }, 5000)
+      })
+      ```
+   
+   3. 主进程注册关闭窗口的监听并销毁窗口
+   
+      > 这里不能调用 `win.close()` 关闭窗口，如果调用会触发前边窗口 `close` 的监听，而此监听又会阻止窗口关闭，从而进入死循环。
+      >
+      > 因为当用户确认关闭窗口时应该已经完成收尾工作，所以直接销毁窗口 `win.destory()` 就可以了。
+   
+      ```js
+      ipcMain.on('destoryWin', () => {
+        console.log('退出 app');
+        win?.destroy()
+      })
+      ```
+   
+      
+   
+   
+   
    
 

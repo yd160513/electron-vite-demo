@@ -24,3 +24,15 @@ export const outherUnmaximizeListener = (handle: Function) => {
     handle()
   })
 }
+
+ipcRenderer.on('closeBefore', event => {
+  console.log('关闭窗口前的提示并通知主进程');
+  console.log('等待确认');
+  
+  
+  setTimeout(() => {
+    console.log('同意关闭');
+    
+    ipcRenderer.send('destoryWin')
+  }, 5000)
+})
