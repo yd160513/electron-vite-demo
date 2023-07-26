@@ -1,22 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Vue + TS</title>
-    <style scoped>
-      body, html {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        height: 100%;
-        pointer-events: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div id='app'></div>
-    <script type='module' src='/src/irregularWindow.ts'></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite + Vue + TS</title>
+  <style scoped>
+    body,
+    html {
+      margin: 0px;
+      padding: 0px;
+    }
+
+    #app {
+      box-sizing: border-box;
+      width: 380px;
+      height: 380px;
+      border-radius: 190px;
+      background-color: #fff;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <div id='app'></div>
+  <script type='module' src='/src/irregularWindow.ts'></script>
+</body>
+
 </html>

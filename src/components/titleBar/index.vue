@@ -54,7 +54,6 @@ outherUnmaximizeListener(() => {
   height: 38px;
   line-height: 38px;
   background-color: #fff1f0;
-  border-bottom: 1px solid #f5222d;
   .title {
     flex: 1;
     display: flex;

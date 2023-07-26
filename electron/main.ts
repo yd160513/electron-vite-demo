@@ -73,16 +73,30 @@ function createIrregularWindow() {
     transparent: true, // 设置窗口为透明
     frame: false, // 无边框
     maximizable: false, // 阻止窗口最大化
-    resizable: false // 不能改变窗口尺寸
+    resizable: false, // 不能改变窗口尺寸
+    alwaysOnTop: true, // 永远在置顶    
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
 
+  irregularWindow.setIgnoreMouseEvents(true, { forward: true })
+
   console.log('VITE_DEV_SERVER_URL: ', VITE_DEV_SERVER_URL);
-  
+
   if (VITE_DEV_SERVER_URL) {
     irregularWindow.loadURL(`${VITE_DEV_SERVER_URL}/irregularWindow.html`)
   } else {
     irregularWindow.loadFile(path.join(process.env.DIST, 'irregularWindow.html'))
   }
+
+  ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+    console.log('set-ignore-mouse-events: ', ignore, options)
+    
+    irregularWindow?.setIgnoreMouseEvents(ignore, options)
+  })
 
 }
 
