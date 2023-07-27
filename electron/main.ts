@@ -1,6 +1,9 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
 import path from 'node:path'
 import windowToolHandle from './windowTool';
+
+console.log('nativeTheme.shouldUseDarkColors: ', nativeTheme.shouldUseDarkColors);
+
 
 // The built directory structure
 //
@@ -61,7 +64,30 @@ function createWindow() {
 app.on('window-all-closed', () => {
   win = null
   irregularWindow = null
-  app.quit()
+
+  /**
+   * mac 系统下的特殊用户体验: 
+   * 应用程序关闭所有窗口后不会退出，而是继续保留在 Dock 栏，以便用户再想使用应用时，可以直接通过 Dock 栏快速打开应用窗口。
+   * 
+   * process.platform 值为 darwin 时代表 mac 系统；
+   *                  值为 win32 时代表 windows 系统；
+   *                  值为 linux 时代表 linux 系统；
+   * 也可以通过 require('os').platform() 获取。
+   */
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+/**
+ * app 的 activate 事件是 mac 专有事件，当应用程序被激活时会被触发。
+ * 因为主进程中每关闭一个窗口，都会把窗口对应的 win 对象设置为 null，所以当用户激活应用程序时，再创建一个全新的窗口即可。
+ * activate 事件回调的第二个参数 hasVisibleWindows 表示当前是否存在可见的窗口，开发者也可利用此参数优化用户体验。
+ */
+app.on('activate', () => {
+  if (win === null) {
+    createWindow()
+  }
 })
 
 app.whenReady().then(() => {
