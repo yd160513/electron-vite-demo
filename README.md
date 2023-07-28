@@ -262,3 +262,85 @@ new BrowserWindow({
    ```
 
 2. 通过 nativeTheme.shouldUseDarkColors 获取是否是深色模式
+
+### webContents 实例
+
+webContents 是 Electron 的核心模块，负责渲染和控制应用内的 web 界面；webFrame 提供访问和控制子页面。
+
+#### 1. 获取当前窗口的 webContents
+
+```js
+xxxWin.webContents
+```
+
+#### 2. 获取处于激活状态下窗口的 webContents
+
+```js
+const { webContents } = require("electron")
+// 1. 未激活状态调用此方法返回 null。
+// 2. 需要在窗口 focus 事件触发之后获取
+webContents.getFocusedWebContents()
+```
+
+#### 3. 每创建一个窗口就会有一个对应的 webContents 的 id
+
+#### 4. 获取所有 webContents，且在万不得已时可以遍历。
+
+```js
+webContents.getAllWebContents()
+```
+
+#### 5. webContents 可以监听 web 页面加载事件
+
+```js
+1. did-start-loading
+2. page-title-updated
+3. dom-ready
+4. did-farme-finish-load
+5. page-favicon-updated
+6. did-stop-loading
+```
+
+#### 6. webContents 可以监听 web 页面跳转事件
+
+> 1. 凡是以 navigate 命名的时间一般都是由客户端控制的跳转
+> 1. 凡是以 redirect 命名的事件一般都是由服务端控制的跳转，比如服务端响应 302 跳转命令
+
+```js
+1. will-redirect
+2. did-redirect-navigation
+3. did-start-navigation
+4. will-navigate
+5. did-navigate-in-page
+6. did-frame-navigate
+7. did-navigate
+```
+
+单页应用中的页面跳转会触发这些监听
+
+```js
+1. did-start-navigation
+2. did-navigate-in-page
+```
+
+### 页面缩放
+
+通过 webContents 的 setZoomFactor 方法设置页面的缩放比例，此方法接收一个缩放比例的参数，如果参数值大于1，则放大网页，反之则缩小网页，参数值为1时，网页呈原始状态。可以通过 getZoomFactor 方法获取当前网页的缩放比例。
+
+```js
+someWin.webContents.setZoomFactor(2)
+const zoomFactor = someWin.webContents.getZoomFactor()
+console.log('zoomFactor: ', zoomFactor);
+```
+
+也可以通过 setZoomLevel 方法来设置网页缩放等级。接收一个参数 level，最终的缩放比例等于 level 乘以 1.2，如果 level 为 0 则不缩放。可以通过 getZoomLevel 方法获取当前网页的缩放等级。
+
+```js
+win.webContents.setZoomLevel(2)
+const zoomLevel = win.webContents.getZoomLevel()
+console.log('zoomLevel: ', zoomLevel);
+```
+
+默认情况下用户可以通过 `Ctrl + Shift + =` 快捷键来放大网页， `Ctrl + -` 快捷键来缩小网页。如果需要控制用户缩放网页的等级范围，可以通过 setVisualZoomLevelLimits 方法来设置网页的最小和最大缩放等级。该方法接收两个参数，第一个参数为最小缩放等级，第二个参数为最大缩放等级，此处等级数字与 setZoomLevel 方法参数的含义相同。
+
+### 页面容器

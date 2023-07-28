@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, webContents } from 'electron'
 import path from 'node:path'
 import windowToolHandle from './windowTool';
 
@@ -59,6 +59,22 @@ function createWindow() {
     win?.webContents.send('closeBefore')
   })
 
+  // 窗口聚焦之后
+  win.on('focus', () => {
+    console.log('focus');
+    // 获取聚焦的 webContents
+    const contents = webContents.getFocusedWebContents()
+    console.log('focus 之后 webContents: ', contents);
+  })
+
+  // 设置网页缩放，大于1为放大
+  win.webContents.setZoomFactor(2)
+  const zoomFactor = win.webContents.getZoomFactor()
+  console.log('zoomFactor: ', zoomFactor);
+
+  win.webContents.setZoomLevel(2)
+  const zoomLevel = win.webContents.getZoomLevel()
+  console.log('zoomLevel: ', zoomLevel);
 }
 
 app.on('window-all-closed', () => {
