@@ -344,3 +344,48 @@ console.log('zoomLevel: ', zoomLevel);
 默认情况下用户可以通过 `Ctrl + Shift + =` 快捷键来放大网页， `Ctrl + -` 快捷键来缩小网页。如果需要控制用户缩放网页的等级范围，可以通过 setVisualZoomLevelLimits 方法来设置网页的最小和最大缩放等级。该方法接收两个参数，第一个参数为最小缩放等级，第二个参数为最大缩放等级，此处等级数字与 setZoomLevel 方法参数的含义相同。
 
 ### 页面容器
+
+在页面中嵌入其他页面的需求经常可以看到，Electron 提供了三种页面容器，分别是 webFrame、webView 和 BrowserView。前两者都有一定缺陷，所以推荐使用 VrowserView。
+
+场景就比如开发一个简单的浏览器，标签栏、地址栏、搜索框肯定在主页面中，用户请求浏览的页面肯定是一个子页面，这个时候子页面就可以通过 BrowserView 实现。
+
+#### BrowserView
+
+它被设计成一个子窗口的形式，它依托于 BrowserWindow 存在，可以绑定到 BrowserWindow 的一个具体的区域。BrowserView 看起来就像是 BrowserWindow 里的一个元素一样。
+
+```js
+const view = new BrowserView({})
+	// 将 view 设置为 someWin 的一个容器
+  someWin.setBrowserView(view)
+	// 将 view 绑定到 someWin 的具体区域
+  const size = someWin.getSize()
+  view.setBounds({
+    x: 0,
+    y: 80,
+    width: size[0],
+    height: size[1] - 80
+  })
+	// 设置 view 的宽高自适应 someWin 的宽高变化
+  view.setAutoResize({
+    width: true,
+    height: true
+  })
+	// view 的 webContents 加载的 URL
+  view.webContents.loadURL('https://www.baidu.com/')
+```
+
+通过设置 view 的 y 和 height，对应到上面的例子中就是只给 someWin 留出了顶部 80 个像素高的一块区域，只有这块区域是属于 someWin 的，其余区域都交给了 view 容器对象。
+
+场景可以想象到浏览器的 tab 页，tab 页可以有多个，那么就需要动态的创建多个 BrowserView 来缓存和展现用户打开的多个标签页，用户切换标签页时，通过控制相应 BrowserView 容器对象的显示隐藏来满足需求。
+
+为了满足多个 tab 的需求，第一个 tab 可以通过 win.setBrowserView 方法来创建，而后面的 tab 应该采用 win.addBrowserView 方法。因为 setBrowserView 会判断当前 win 是否已经设置过了 BrowserView 对象，如果设置过，那么此操作就替换掉原有的 BrowserView 对象。而 addBrowserView 则可以设置多个 BrowserView 对象同时存在。
+
+BrowserView 并没有 hide 和 show 方法，如果需要隐藏一个 BrowserView 可以利用 `win.removeBrowserView(view)` 显式地把它从窗口中移除掉，需要显式的时候再利用 `win.addBrowserView(view)` 把它加回来。此操作并不会造成 BrowserView 重新渲染，可以放心使用。
+
+也可以使用 CSS 显式和隐藏 BrowserView: 
+
+```js
+view.webContents.insertCSS('html{display: block}') // 显示
+view.webContents.insertCSS('html{display: none}') // 隐藏
+```
+

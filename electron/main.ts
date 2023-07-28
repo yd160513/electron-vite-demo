@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme, webContents } from 'electron'
+import { app, BrowserView, BrowserWindow, ipcMain, nativeTheme, webContents } from 'electron'
 import path from 'node:path'
 import windowToolHandle from './windowTool';
 
@@ -71,10 +71,26 @@ function createWindow() {
   win.webContents.setZoomFactor(2)
   const zoomFactor = win.webContents.getZoomFactor()
   console.log('zoomFactor: ', zoomFactor);
-
+  // 设置网页缩放，最终缩放比例为参数 * 1.2
   win.webContents.setZoomLevel(2)
   const zoomLevel = win.webContents.getZoomLevel()
   console.log('zoomLevel: ', zoomLevel);
+
+  // 创建 BrowserView
+  const view = new BrowserView({})
+  win.setBrowserView(view)
+  const size = win.getSize()
+  view.setBounds({
+    x: 0,
+    y: 80,
+    width: size[0],
+    height: size[1] - 80
+  })
+  view.setAutoResize({
+    width: true,
+    height: true
+  })
+  view.webContents.loadURL('https://www.baidu.com/')
 }
 
 app.on('window-all-closed', () => {
