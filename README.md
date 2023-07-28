@@ -389,3 +389,79 @@ view.webContents.insertCSS('html{display: block}') // 显示
 view.webContents.insertCSS('html{display: none}') // 隐藏
 ```
 
+### 脚本注入
+
+> 所有的注入方式不论是 BrowserWindow 还是 BrowserView 都可以。
+
+#### 1. 通过 preload 注入脚本
+
+preload 除了可以访问此网页的任意内容，比如 DOM、Cookie（包括标记了 HttpOnly 属性的 cookie）、服务端资源（包括 HTTP API）之外，还可以通过 Node 访问系统资源。
+
+> 无论是否开启 webPreferences.nodeIntegration 注入的脚本都有能力访问 Node 的 API，但是如果开启的话，脚本中的第三方网页也具有访问 Node API 的能力，也就可以任意操纵用户的电脑了。
+
+注入的脚本中也可以 require 其他脚本。
+
+#### 2. 通过 executeJavascript 注入脚本
+
+如果只需要注入一两句 js 脚本，则可以使用 webContents.executeJavascript 方法。
+
+该方法返回的是一个 Promise 对象。
+
+```js
+win.webContents.on('did-finish-load', async () => {
+  win?.webContents.send('main-process-message', (new Date).toLocaleString())
+
+  // executeJavascript() 注入脚本
+  const res = await win?.webContents.executeJavaScript('document.querySelector("img").src')
+  console.log('res: ', res);
+})
+```
+
+脚本中代码量偏多的时候可以采用立即执行函数，如果非常多还是建议采用 preload 注入。
+
+```js
+win.webContents.on('did-finish-load', async () => {
+  win?.webContents.send('main-process-message', (new Date).toLocaleString())
+
+  // executeJavascript() 注入脚本
+  const res = await win?.webContents.executeJavaScript(`(() => {
+      return document.querySelector("img").src
+    })()`)
+  console.log('res: ', res);
+})
+```
+
+#### 3. 通过 insertCSS 注入 CSS 样式
+
+```js
+const key = await win.webContents.insertCSS('html, body { background-color: #f00 !important; }')
+```
+
+该方法返回一个 Promise 对象，返回的 key 可以用来删除注入的样式
+
+```js
+await win.webContents.removeInsertedCSS(key)
+```
+
+#### 禁用窗口的 beforeunload 事件
+
+通过 beforeunload 事件来增加用户确认窗口是否关闭，当用户关闭窗口时浏览器会给出警告提示。如果用 Electron 加载了一个注册了 beforeunload 事件的第三方网页，这个时候就会发现这个窗口无法关闭，而且不会收到任何提示。
+
+第一种解决方案可以通过注入一段脚本将 window.onbeforeunload 设置为 null
+
+```js
+await win.webContents.executeJavaScript('window.onbeforeunload = null')
+```
+
+这种方案在大多数情况下是可行的，但并不是完美的解决方案，由于无法获悉第三方网页在何时注册 onbeforeunload 事件，因此有可能取消其 onbeforeunload 事件时它还未被注册。
+
+**最优雅的解决方案**是监听 webContents 的 will-prevent-unload 事件，通过 event.preventDefault() 来取消该事件，这样就可以自由地关闭窗口了。
+
+```js
+win.webContents.on('will-prevent-unload', event => {
+  event.preventDefault()
+})
+```
+
+### 使用动画时尽量从 CSS Animations 转换为 Web Animations
+

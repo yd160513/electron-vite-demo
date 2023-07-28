@@ -43,8 +43,19 @@ function createWindow() {
   })
 
   // Test active push message to Renderer-process.
-  win.webContents.on('did-finish-load', () => {
+  win.webContents.on('did-finish-load', async () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
+
+    // executeJavascript() 注入脚本
+    const res = await win?.webContents.executeJavaScript(`(() => {
+        return document.querySelector("img").src
+      })()`)
+    console.log('res: ', res);
+  })
+
+  // 防止 Electron 加载的页面中注册了 will-prevent-unload 事件，导致窗口无法关闭。
+  win.webContents.on('will-prevent-unload', event => {
+    event.preventDefault()
   })
 
   if (VITE_DEV_SERVER_URL) {
