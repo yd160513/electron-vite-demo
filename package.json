@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "electron-store": "^8.1.0",
+    "sqlite3": "^5.1.6",
     "vue": "^3.2.47"
   },
   "devDependencies": {

@@ -465,3 +465,125 @@ win.webContents.on('will-prevent-unload', event => {
 
 ### 使用动画时尽量从 CSS Animations 转换为 Web Animations
 
+### 数据相关
+
+#### 用户数据目录
+
+操作系统为应用程序提供了一个专有目录来存放应用程序的用户个性化数据: 
+
+```js
+windows: C:\Users\[your user name]\AppData\Roaming
+mac: /Users/[your user name]/Library/Application Support/
+linux: /home/[your user name]/.config/xiangxuema
+```
+
+开发者应该把用户的个性化数据存放在上述这些目录中。
+
+可以通过 `app.getPath('userData')` 获取上述上述目录，该方法会先判断当前应用运行在什么操作系统上，然后根据操作系统返回具体的路径地址。
+
+> 给 app.getPath 方法传入不同的参数，可以获取不同用途的路径。用户根目录对应的参数为 home。desktop、documents、downloads、pictures、music、video 都可以作为参数传入，获取用户根目录下相应的文件夹。还有一些特殊的路径: 
+>
+> - temp 对应系统临时文件夹路径。
+>
+> - exe 对应当前执行程序的路径。
+>
+> - appData 对应应用程序用户个性化数据的目录。
+>
+> - userData 是 appData 路径后再加上应用名的路径，是 appData 的子路径。
+>
+>   这里的应用名指的是 package.json 中的 name 字段值。
+>
+> 所以，如果开发的是一个音乐应用，那么保存音乐文件的时候，可能并不会首选 userData 对应的路径，而是选择 music 对应的路径。
+>
+> 除此之外，还可以使用 node 的能力获取系统默认路径，比如: 
+>
+> - `require('os').homedir()` 返回当前用户的主目录，如: 'C:\Users\allen'
+> - `require(os).tmpdir()` 返回默认临时文件目录，如: 'C\Users\allen\AppData\Local\Temp'
+
+当需要用户设置自己的数据保存在什么目录时，可以通过 `app.setPath('appData')` 来重置用户数据目录。
+
+> app.setPath 方法接收两个参数，第一个是要重置的路径的名称，第二个是具体的路径。
+
+然后通过 `app.getPath('appData')` 就可以获取到新的路径。
+
+#### !!! 因为 js 是单线程执行，读写大文件时应考虑使用异步方法实现，获将读写工作交由 node 的 worker_threads 完成。
+
+### 读写受限访问的 cookie
+
+通过 document.cookie 是无法读写 HttpObly 标记的 cookie 和其他域下的 cookie。
+
+Electron 提供了专门用来读取 cookie 的 api，可以读取受限访问的 cookie: 
+
+```js
+await session.defaultSession.cookies.get({name})
+await session.defaultSession.cookies.set({name})
+```
+
+session 是 Electron 用来管理浏览器会话、Cookie、缓存和代理的工具对象，defaultSession 是当前浏览器会话对象的实例。还可以通过 `win.webContents.session` 获取当前页面的 session 实例。
+
+`session.defaultSession.cookies` 的 `set` 方法接收一个 Cookie 对象，其中包含了 HttpOnly 和 secure 等其他常见属性。也就是说可以在 Electron 中用 js 代码为浏览器设置 HttpOnly 的 cookie。通常情况下这类 Cookie 是在服务器端设置的，虽然它被保存在浏览器客户端，但是 js 不具有读写这类 cookie 的能力。
+
+#### 清空浏览器缓存
+
+比如希望重置所有与自己相关的数据时，这些数据可能保存在 cookie 中，也可能保存在 IndexedDB 中。开发者可以手动一个一个清楚，但是 Electron 提供了更简单的方式: 
+
+```js
+await session.defaultSession.clearStorageData({
+  storages: 'cookies,localstorage'
+})
+```
+
+它接收一个 options 对象，该对象的 storages 属性可以设置一下值的任意一个或多个（多个值用英文逗号分隔）：appcache、cookies、filesystem、indexdb、localstorage、shadercache、websql、serviceworkers、cachestorage。它能控制几乎所有浏览器相关的缓存。另外还可以为 options 对象设置配额和 origin 属性来更精细地控制清理的条件。
+
+#### 使用 SQLite 持久化数据
+
+> 之前 node 版本需要本地编译再安装 sqlite，最新版的 node 不需要了，直接[按照 sqlite 官网](https://www.npmjs.com/package/sqlite3)安装就可以
+
+一般情况下，为 Election 安装一个第三方库，与为 node 工程安装第三方库并没有太大区别，但这仅限于只有 js 语言开发的库。如果第三方库是使用 C/C++ 开发的，那么在安装这个库的时候就需要**本地编译安装**。
+
+SQLite3 是基于 C 语言开发的，node-sqlite3（SQLite3 提供给 node 的绑定）也大量使用了 C 语言，因此并不能简单的使用 yarn add 来安装，需要使用如下命令安装: 
+
+```js
+npm install sqlite3 --build-from-source --runtime=electron --target=24.6.4 --dist-url=https://atom.io/download/electron
+```
+
+> 需要注意!!!: --target=24.6.4 是指 Electron 版本号，可以通过 process.versions.electron 来查看当前正在使用的 electron 版本号。
+
+node-sqlite3 只是对 SQLite3 做了简单封装，为了完成数据的 CRUD 操作还需要编写传统的 SQL 语句，推荐使用 knexjs 库作为对 node-sqlite3 的再次包装，完成业务数据访问读写工作。knexjs 是一个 SQL 指令构建器，开发者可以使用它编写串行化的数据访问代码，他会把开发者编写的代码转换为 SQL 语句，再交由数据库执行处理。数据库返回的数据，它也会格式化成 JSON 对象。knexjs 也是业内执行的数据库访问工具。
+
+```js
+// 创建数据访问对象
+let knex = require('knex')({
+  client: 'sqlite3',
+  connection: { filename: yourSqliteDbFilePath }
+})
+
+// CRUD 操作
+// 查找
+let result = await knex('admins').where({id: 0})
+// 排序
+let result = await knex('users').orderBy('name', 'desc')
+// 更新
+await knex('admins').where('id', 0).update({ password: 'test' })
+// 删除
+await knex('addresses').whereIn('id', [0, 1, 2]).del()
+```
+
+客户端 GUI 工具可以使用:  SQLiteStudio。
+
+### 解析 jsx 或 tsx
+
+[vite 官方提供了解决方案](https://cn.vitejs.dev/guide/features.html#jsx) :  [@vitejs/plugin-vue-jsx](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue-jsx) 插件。
+
+```js
+// vite.config.ts
+import vueJsx from '@vitejs/plugin-vue-jsx';
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [
+    vueJsx()
+  ]
+})
+```
+

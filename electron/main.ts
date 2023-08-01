@@ -1,9 +1,41 @@
 import { app, BrowserView, BrowserWindow, ipcMain, nativeTheme, webContents } from 'electron'
 import path from 'node:path'
 import windowToolHandle from './windowTool';
+import testApi, { initDb } from './../sql/sql-api';
 
 console.log('nativeTheme.shouldUseDarkColors: ', nativeTheme.shouldUseDarkColors);
 
+console.log("app.getPath('userData'): ", app.getPath('userData'));
+
+initDb().then(() => {
+  console.log('准备新增数据');
+  
+  testApi.addTest({
+    type: 1,
+    tel: '177****1111',
+    cookie: 'dsjadljsakldjsakldjkaslfklaj',
+    uin: 'uin'
+  })
+    .then(res => {
+      console.log('新增数据响应: ', res);
+    }).catch(err => {
+      console.log('新增数据报错: ', err);
+    }).then(() => {
+      console.log('准备查询数据');
+      
+      testApi.getTest({page:1})
+      .then(res=>{
+        console.log('查询数据结果: ', res);
+      })
+    }).then(() => {
+      console.log('准备删除数据');
+      testApi.delTest({id:1})
+      .then(res=>{
+        console.log('删除接口响应: ', res);
+      })
+
+    })
+})
 
 // The built directory structure
 //
@@ -171,7 +203,7 @@ function createIrregularWindow() {
 
   ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
     console.log('set-ignore-mouse-events: ', ignore, options)
-    
+
     irregularWindow?.setIgnoreMouseEvents(ignore, options)
   })
 
@@ -189,5 +221,5 @@ ipcMain.on('destoryWin', () => {
   win?.destroy()
   const count = BrowserWindow.getAllWindows().length
   console.log('count: ', count);
-  
+
 })
